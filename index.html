@@ -48,7 +48,7 @@
         .glass-panel {
             background: rgba(13, 14, 18, 0.99);
             border: 1px solid rgba(212, 175, 55, 0.1);
-            transform: translateZ(0); /* Hardware acceleration */
+            transform: translateZ(0);
         }
 
         .input-prestige {
@@ -60,10 +60,6 @@
             outline: none;
         }
 
-        .input-prestige:focus {
-            border-color: var(--gold);
-        }
-
         .scanline {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -73,7 +69,6 @@
             pointer-events: none;
         }
 
-        /* Safe Areas para Notch de Celular */
         .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
         .safe-pt { padding-top: env(safe-area-inset-top); }
     </style>
@@ -89,8 +84,8 @@
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "framer-motion": "https://esm.sh/framer-motion@11.11.17?deps=react@19.0.0,react-dom@19.0.0",
     "lucide-react": "https://esm.sh/lucide-react@0.475.0?deps=react@19.0.0,react-dom@19.0.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
