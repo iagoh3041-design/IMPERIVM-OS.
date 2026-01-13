@@ -48,16 +48,6 @@
         .glass-panel {
             background: rgba(13, 14, 18, 0.99);
             border: 1px solid rgba(212, 175, 55, 0.1);
-            transform: translateZ(0);
-        }
-
-        .input-prestige {
-            background: #111216;
-            border: 1px solid rgba(212, 175, 55, 0.15);
-            border-radius: 12px;
-            padding: 12px;
-            color: white;
-            outline: none;
         }
 
         .scanline {
@@ -69,13 +59,38 @@
             pointer-events: none;
         }
 
-        .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
-        .safe-pt { padding-top: env(safe-area-inset-top); }
+        /* Estilo para a mensagem de carregamento antes do React montar */
+        #root:empty::before {
+            content: 'INICIALIZANDO_IMPERIVM_OS...';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'JetBrains+Mono', monospace;
+            font-size: 10px;
+            color: var(--gold);
+            letter-spacing: 0.5em;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
     <div class="scanline"></div>
     <div id="root"></div>
+
+    <!-- Script de Depuração: Se houver erro no carregamento, ele avisa -->
+    <script>
+        window.onerror = function(msg, url, line) {
+            console.error("ERRO_SISTEMA: " + msg + " em " + url + ":" + line);
+            // Opcional: alert("Erro Detectado: " + msg);
+        };
+    </script>
+
     <script type="importmap">
 {
   "imports": {
@@ -84,8 +99,8 @@
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "framer-motion": "https://esm.sh/framer-motion@11.11.17?deps=react@19.0.0,react-dom@19.0.0",
     "lucide-react": "https://esm.sh/lucide-react@0.475.0?deps=react@19.0.0,react-dom@19.0.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
   }
 }
 </script>
