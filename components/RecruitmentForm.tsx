@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Candidate, CandidateStatus } from '../types.ts';
+import { Candidate, CandidateStatus, Profession } from '../types.ts';
 import { 
-  Fingerprint, CheckCircle2, User, Target, Skull, 
-  Send, ShieldAlert, Heart, Scroll, AlertCircle,
-  ArrowRight, ArrowLeft, ShieldCheck
+  ArrowRight, ArrowLeft, ChevronDown, 
+  Skull, FileText, Fingerprint, Loader2, CheckCircle2,
+  ShieldCheck, Brain, Clock, Zap, Target, Heart
 } from 'lucide-react';
 
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1457049586303766792/ZRBa9vJCz6DDK_WKs3uC1JDR-uNL2R4cemiX-wdQzoSTn4kS_ABzdA2gPBdjW7HZ27LR";
@@ -17,252 +17,260 @@ interface Props {
 
 const RecruitmentForm: React.FC<Props> = ({ onSubmit, onAdminAccess }) => {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<any>({
-    areasExperience: [],
+  const [formData, setFormData] = useState<Partial<Candidate>>({
+    profession: "Executor (Combate)" as Profession,
+    loyaltyLevel: "Total",
     proficiencyLevel: "5",
-    profession: "Executor (Combate)",
+    testWillingness: "Sim",
+    illegalWillingness: "Total",
+    ambitionLevel: "Moderado",
+    civilStatus: "Solteiro",
+    nationality: "Brasileiro",
+    secrecyCommitment: "Sim",
+    irregularHours: "Noite",
+    children: "Não",
+    personalConflicts: "Nenhum",
+    sacrificeInterest: "Sim",
+    familyInOtherOrg: "Não",
+    rulesCommitment: "Sim",
   });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [isSealed, setIsSealed] = useState(false);
+  const [errorField, setErrorField] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as any;
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData((prev: any) => ({
-        ...prev,
-        areasExperience: checked 
-          ? [...(prev.areasExperience || []), value]
-          : prev.areasExperience.filter((i: string) => i !== value)
-      }));
-    } else {
-      setFormData((prev: any) => ({ ...prev, [name]: value }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errorField === name) setErrorField(null);
+  };
+
+  const validateStep = () => {
+    const required: Record<number, string[]> = {
+      1: ['name', 'contact', 'age', 'location', 'nationality'],
+      2: ['profession', 'specialSkills', 'workHistory', 'proficiencyLevel'],
+      3: ['motivation', 'orgGoal'],
+      4: ['ambitionLevel', 'loyaltyLevel', 'personalConflicts'],
+      5: ['irregularHours', 'secrecyCommitment'],
+      6: ['signature']
+    };
+    const fields = required[step] || [];
+    for (const f of fields) {
+      if (!formData[f as keyof Candidate]) {
+        setErrorField(f);
+        return false;
+      }
     }
+    return true;
   };
 
   const nextStep = () => {
-    const container = document.querySelector('.overflow-y-auto');
-    if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
-    setStep(s => s + 1);
-  };
-  const prevStep = () => {
-    const container = document.querySelector('.overflow-y-auto');
-    if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
-    setStep(s => s - 1);
+    if (validateStep()) {
+      setStep(prev => prev + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const prevStep = () => {
+    setStep(prev => prev - 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSubmit = async () => {
+    if (!validateStep()) return;
     setIsSubmitting(true);
     const fullData: Candidate = {
       id: Math.random().toString(36).substr(2, 9),
       status: CandidateStatus.PENDING,
       date: new Date().toISOString(),
-      ...formData
+      ...(formData as Candidate)
     };
     
-    // Log Discord
     try {
       await fetch(DISCORD_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           embeds: [{
-            title: "🩸 NOVO PACTO DE SANGUE",
-            color: 0xd4af37,
+            title: "🩸 NOVO DOSSIÊ IMPERIAL 🩸",
+            description: `Recruta **${fullData.name}** iniciou o juramento de sangue.`,
+            color: 0xff3333,
             fields: [
-              { name: "👤 Nome", value: fullData.name || "Não informado", inline: true },
-              { name: "🎯 Cargo", value: fullData.profession, inline: true },
-              { name: "📞 Discord", value: fullData.contact || "Não informado", inline: true }
-            ],
-            footer: { text: "Imperivm High Command" }
+              { name: "Operativo", value: fullData.name, inline: true },
+              { name: "Especialidade", value: fullData.profession, inline: true },
+              { name: "Localização", value: fullData.location, inline: true }
+            ]
           }]
         })
       });
-    } catch(e) {}
-
-    onSubmit(fullData);
-    setIsSubmitting(false);
-    setSubmitted(true);
+      setIsSealed(true);
+      setTimeout(() => onSubmit(fullData), 3000);
+    } catch {
+      setIsSealed(true);
+      setTimeout(() => onSubmit(fullData), 3000);
+    }
   };
 
-  if (submitted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-[#0a0a0c]">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-md glass-panel p-10 rounded-[2.5rem] text-center border-[#d4af37]/20">
-          <ShieldCheck size={64} className="text-[#d4af37] mx-auto mb-6" />
-          <h2 className="font-cinzel text-xl font-black text-white mb-4 uppercase tracking-widest">Alistamento Enviado</h2>
-          <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-[0.2em] leading-relaxed mb-8">
-            Seu dossiê está em análise. Se você for digno, entraremos em contato. <br/>Não nos procure.
-          </p>
-          <button onClick={() => location.reload()} className="w-full py-5 bg-[#d4af37] text-black rounded-2xl text-[10px] font-black uppercase tracking-widest">VOLTAR AO INÍCIO</button>
-        </motion.div>
-      </div>
-    );
-  }
+  const stepIcons = [null, <FileText size={32} />, <Target size={32} />, <Brain size={32} />, <Heart size={32} />, <ShieldCheck size={32} />, <Skull size={32} />];
 
   return (
-    <div className="min-h-screen flex flex-col items-center pt-10 pb-32 px-4 bg-[#0a0a0c] relative">
-      <div className="scanline"></div>
-      
-      <div className="w-full max-w-2xl relative z-20">
-        <header className="text-center mb-10">
-          <motion.div whileTap={{ scale: 0.9 }} onClick={onAdminAccess} className="w-16 h-16 bg-[#111216] rounded-2xl mx-auto flex items-center justify-center border border-[#d4af37]/20 mb-6 cursor-pointer">
-            <Fingerprint className="w-8 h-8 text-[#d4af37]" />
-          </motion.div>
-          <h1 className="font-cinzel text-3xl font-black text-white tracking-[0.3em] uppercase">Imperivm</h1>
-          <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-3">Elite Command Operations</p>
-        </header>
+    <div className="min-h-screen bg-black flex flex-col p-4 md:p-8 relative overflow-x-hidden mobile-safe-top mobile-safe-bottom">
+      <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
 
-        <motion.div layout className="glass-panel p-6 md:p-12 rounded-[2.5rem] border-white/5 relative">
-          <div className="absolute top-0 left-0 h-1.5 bg-[#d4af37] transition-all duration-500" style={{ width: `${(step/6)*100}%` }}></div>
-          
-          <form className="space-y-8">
-            <AnimatePresence mode="wait">
-              {step === 1 && (
-                <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                  <SectionTitle icon={<User size={18}/>} text="I. Identificação Civil" />
-                  <Field label="1. Nome Completo" name="name" required value={formData.name || ''} onChange={handleChange} />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="2. Idade" name="age" type="number" required value={formData.age || ''} onChange={handleChange} />
-                    <Field label="3. Contato (Discord)" name="contact" required value={formData.contact || ''} onChange={handleChange} />
-                  </div>
-                  <Field label="4. Localização/Setor" name="location" required value={formData.location || ''} onChange={handleChange} />
-                  <Field label="5. Nacionalidade" name="nationality" value={formData.nationality || ''} onChange={handleChange} />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="6. Estado Civil" name="civilStatus" value={formData.civilStatus || ''} onChange={handleChange} />
-                    <Field label="7. Filhos (Quantos?)" name="children" value={formData.children || ''} onChange={handleChange} />
-                  </div>
-                  <StepActions onNext={nextStep} />
-                </motion.div>
-              )}
+      <AnimatePresence mode="wait">
+        {!isSealed ? (
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-4xl mx-auto glass-panel rounded-[2rem] overflow-hidden flex flex-col shadow-2xl relative z-10 my-auto"
+          >
+            {/* Header Mobile Otimizado */}
+            <div className="bg-[#0c0c0e] p-6 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-red-600/20 rounded-2xl flex items-center justify-center border border-red-500/40 text-red-500">
+                  {stepIcons[step]}
+                </div>
+                <div>
+                  <h1 className="font-cinzel text-lg md:text-2xl font-black tracking-widest text-white leading-tight">DOSSIÊ IMPERIAL</h1>
+                  <p className="text-[10px] text-zinc-300 font-mono uppercase tracking-[0.3em]">Etapa {step} / 6</p>
+                </div>
+              </div>
+              <button onClick={onAdminAccess} className="p-4 bg-zinc-900 rounded-2xl border border-white/10 text-zinc-400">
+                <Fingerprint size={28} />
+              </button>
+            </div>
 
-              {step === 2 && (
-                <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                  <SectionTitle icon={<Target size={18}/>} text="II. Capacidades Operacionais" />
-                  <Area label="8. Habilidades Especiais" name="specialSkills" value={formData.specialSkills || ''} onChange={handleChange} placeholder="O que te torna indispensável?" />
-                  <Area label="9. Histórico Profissional (RP)" name="workHistory" value={formData.workHistory || ''} onChange={handleChange} />
-                  <div className="space-y-3">
-                    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">10. Áreas de Experiência</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {['Combate', 'Armas', 'Logística', 'Hacking', 'Diplomacia'].map(area => (
-                        <label key={area} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 cursor-pointer hover:bg-white/10 transition-all">
-                          <input type="checkbox" value={area} onChange={handleChange} checked={formData.areasExperience?.includes(area)} className="w-4 h-4 accent-[#d4af37]" />
-                          <span className="text-[10px] text-zinc-400 font-bold uppercase">{area}</span>
-                        </label>
-                      ))}
+            {/* Content - Contraste Elevado */}
+            <div className="p-6 md:p-12 overflow-y-auto max-h-[70vh] custom-scroll">
+              <div className="space-y-8">
+                {step === 1 && (
+                  <div className="space-y-6">
+                    <Input label="NOME DE GUERRA (RP)" name="name" value={formData.name} onChange={handleChange} error={errorField==='name'} placeholder="Seu Codinome" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input label="IDADE REAL" name="age" type="number" value={formData.age} onChange={handleChange} error={errorField==='age'} placeholder="Ex: 20" />
+                      <Input label="IDENTIFICADOR" name="contact" value={formData.contact} onChange={handleChange} error={errorField==='contact'} placeholder="Discord" />
+                    </div>
+                    <Input label="CIDADE / LOCALIZAÇÃO" name="location" value={formData.location} onChange={handleChange} error={errorField==='location'} />
+                    <Input label="NACIONALIDADE" name="nationality" value={formData.nationality} onChange={handleChange} error={errorField==='nationality'} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Select label="ESTADO CIVIL" name="civilStatus" options={['Solteiro', 'Casado', 'Divorciado']} value={formData.civilStatus} onChange={handleChange} />
+                      <Select label="TEM FILHOS?" name="children" options={['Não', 'Sim']} value={formData.children} onChange={handleChange} />
                     </div>
                   </div>
-                  <Select label="11. Nível de Proficiência (1-10)" name="proficiencyLevel" value={formData.proficiencyLevel || '5'} options={['1','2','3','4','5','6','7','8','9','10']} onChange={handleChange} />
-                  <Field label="12. Certificações/Treinos" name="certifications" value={formData.certifications || ''} onChange={handleChange} />
-                  <StepActions onNext={nextStep} onPrev={prevStep} />
-                </motion.div>
-              )}
+                )}
 
-              {step === 3 && (
-                <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                  <SectionTitle icon={<Heart size={18}/>} text="III. Ambição e Foco" />
-                  <Area label="13. Por que o Cartel Imperial?" name="motivation" required value={formData.motivation || ''} onChange={handleChange} />
-                  <Field label="14. Qual seu objetivo final?" name="orgGoal" value={formData.orgGoal || ''} onChange={handleChange} />
-                  <Field label="15. Disposto a atos ilegais?" name="illegalWillingness" value={formData.illegalWillingness || ''} onChange={handleChange} placeholder="Sim/Não" />
-                  <Area label="16. Conflitos de Interesse" name="personalConflicts" value={formData.personalConflicts || ''} onChange={handleChange} />
-                  <Select label="17. Nível de Ambição" name="ambitionLevel" value={formData.ambitionLevel || 'Baixo'} options={['Baixo','Médio','Alto','Implacável']} onChange={handleChange} />
-                  <StepActions onNext={nextStep} onPrev={prevStep} />
-                </motion.div>
-              )}
-
-              {step === 4 && (
-                <motion.div key="s4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                  <SectionTitle icon={<ShieldAlert size={18}/>} text="IV. Protocolo de Lealdade" />
-                  <Select label="19. Nível de Lealdade Estimado" name="loyaltyLevel" options={['Parcial','Total','Absoluta']} value={formData.loyaltyLevel || 'Parcial'} onChange={handleChange} />
-                  <Field label="20. Segue ordens contra a lei?" name="rulesCommitment" value={formData.rulesCommitment || ''} onChange={handleChange} />
-                  <Field label="21. Sacrificaria interesses próprios?" name="sacrificeInterest" value={formData.sacrificeInterest || ''} onChange={handleChange} />
-                  <Field label="22. Parentes em outras orgs?" name="familyInOtherOrg" value={formData.familyInOtherOrg || ''} onChange={handleChange} />
-                  <Field label="23. Aceita teste de lealdade letal?" name="testWillingness" value={formData.testWillingness || ''} onChange={handleChange} />
-                  <StepActions onNext={nextStep} onPrev={prevStep} />
-                </motion.div>
-              )}
-
-              {step === 5 && (
-                <motion.div key="s5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                  <SectionTitle icon={<AlertCircle size={18}/>} text="V. Disposições Finais" />
-                  <Area label="25. Código de Honra Pessoal" name="honorCode" value={formData.honorCode || ''} onChange={handleChange} />
-                  <Field label="26. Manterá segredo absoluto?" name="secrecyCommitment" value={formData.secrecyCommitment || ''} onChange={handleChange} />
-                  <Field label="28. Disponibilidade (Horários)" name="irregularHours" value={formData.irregularHours || ''} onChange={handleChange} />
-                  <div className="p-4 bg-red-950/20 border border-red-900/30 rounded-xl">
-                    <p className="text-[9px] text-red-500 font-black uppercase text-center leading-relaxed">
-                      AO ENVIAR, VOCÊ ACEITA AS CONSEQUÊNCIAS DE QUALQUER TRAIÇÃO. O CARTEL NÃO PERDOA.
-                    </p>
+                {step === 2 && (
+                  <div className="space-y-6">
+                    <Select label="ESPECIALIZAÇÃO" name="profession" options={['Executor (Combate)', 'Piloto (Fuga/Logística)', 'Hacker (Inteligência)', 'Negociador (Diplomacia)', 'Químico (Produção)']} value={formData.profession} onChange={handleChange} />
+                    <Select label="PROFICIÊNCIA (0-10)" name="proficiencyLevel" options={['1','2','3','4','5','6','7','8','9','10']} value={formData.proficiencyLevel} onChange={handleChange} />
+                    <TextArea label="ARSENAL DE HABILIDADES" name="specialSkills" value={formData.specialSkills} onChange={handleChange} error={errorField==='specialSkills'} placeholder="O que você sabe fazer de melhor?" />
+                    <TextArea label="HISTÓRICO EM FACÇÕES" name="workHistory" value={formData.workHistory} onChange={handleChange} error={errorField==='workHistory'} placeholder="Onde já atuou?" />
                   </div>
-                  <StepActions onNext={nextStep} onPrev={prevStep} />
-                </motion.div>
-              )}
+                )}
 
-              {step === 6 && (
-                <motion.div key="s6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8 text-center pb-10">
-                  <SectionTitle icon={<Scroll size={18}/>} text="VI. Selamento do Pacto" />
-                  <div className="p-6 bg-white/5 border border-white/10 rounded-2xl text-[10px] text-zinc-400 uppercase font-bold leading-relaxed">
-                    Declaro que todas as informações acima são verdadeiras. Assino com meu nome operacional.
+                {step === 3 && (
+                  <div className="space-y-6">
+                    <TextArea label="MOTIVAÇÃO REAL" name="motivation" value={formData.motivation} onChange={handleChange} error={errorField==='motivation'} placeholder="Por que a Imperivm?" />
+                    <TextArea label="SUA AMBIÇÃO" name="orgGoal" value={formData.orgGoal} onChange={handleChange} error={errorField==='orgGoal'} placeholder="Onde quer chegar?" />
+                    <Select label="DISPOSIÇÃO PARA ATOS ILEGAIS" name="illegalWillingness" options={['Total', 'Parcial', 'Nula']} value={formData.illegalWillingness} onChange={handleChange} />
                   </div>
-                  <Field label="Assinatura Operacional" name="signature" required value={formData.signature || ''} onChange={handleChange} placeholder="Nome e Sobrenome" />
-                  <div className="flex flex-col gap-4">
-                    <button type="button" onClick={handleSubmit} disabled={isSubmitting} className="w-full py-6 bg-[#d4af37] text-black rounded-2xl text-[12px] font-black uppercase tracking-widest flex items-center justify-center gap-3">
-                      {isSubmitting ? "Criptografando..." : <><Skull size={20} /> SELAR PACTO DE SANGUE</>}
-                    </button>
-                    <button type="button" onClick={prevStep} className="text-[10px] font-black uppercase text-zinc-600 tracking-widest">Revisar Dossier</button>
+                )}
+
+                {step === 4 && (
+                  <div className="space-y-6">
+                    <div className="bg-red-500/10 p-5 rounded-xl border border-red-500/30">
+                       <p className="text-xs text-zinc-200 font-bold uppercase tracking-widest mb-2">Aviso de Lealdade</p>
+                       <p className="text-[11px] text-zinc-400 italic">"Ninguém entra se não estiver disposto a dar a vida."</p>
+                    </div>
+                    <Select label="GRAU DE LEALDADE" name="loyaltyLevel" options={['Total', 'Parcial']} value={formData.loyaltyLevel} onChange={handleChange} />
+                    <Select label="SACRIFÍCIO PELA ORGANIZAÇÃO" name="sacrificeInterest" options={['Sim', 'Depende', 'Não']} value={formData.sacrificeInterest} onChange={handleChange} />
+                    <TextArea label="CONFLITOS OU DÍVIDAS?" name="personalConflicts" value={formData.personalConflicts} onChange={handleChange} error={errorField==='personalConflicts'} placeholder="Há algo que devamos saber?" />
                   </div>
-                </motion.div>
+                )}
+
+                {step === 5 && (
+                  <div className="space-y-6">
+                    <Select label="TURNO DE ATIVIDADE" name="irregularHours" options={['Manhã', 'Tarde', 'Noite', 'Madrugada', 'Integral']} value={formData.irregularHours} onChange={handleChange} />
+                    <Select label="PACTO DE SIGILO (OMERTÀ)" name="secrecyCommitment" options={['Sim', 'Não']} value={formData.secrecyCommitment} onChange={handleChange} />
+                    <Select label="DISPOSTO A TESTES?" name="testWillingness" options={['Sim', 'Não']} value={formData.testWillingness} onChange={handleChange} />
+                    <TextArea label="DEFINA HONRA PARA VOCÊ" name="honorCode" value={formData.honorCode} onChange={handleChange} placeholder="O que é respeito no crime?" />
+                  </div>
+                )}
+
+                {step === 6 && (
+                  <div className="space-y-8 text-center py-6">
+                    <Skull size={64} className="mx-auto text-red-600 animate-pulse" />
+                    <h3 className="text-xl font-cinzel font-black text-white">JURAMENTO FINAL</h3>
+                    <div className="p-6 bg-zinc-950 border-2 border-red-900/40 rounded-3xl text-xs text-zinc-300 leading-relaxed italic">
+                      "Pela minha vida e honra, prometo silêncio absoluto, lealdade incondicional e coragem. O que a Imperivm une, ninguém separa."
+                    </div>
+                    <Input label="ASSINATURA (NOME COMPLETO RP)" name="signature" value={formData.signature} onChange={handleChange} error={errorField==='signature'} placeholder="Digite seu nome para selar" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Navigation Mobile Otimizada */}
+            <div className="bg-[#0c0c0e] p-6 border-t border-white/10 flex justify-between items-center">
+              {step > 1 ? (
+                <button onClick={prevStep} className="flex items-center gap-2 text-zinc-400 font-bold uppercase text-[11px] px-4 py-3">
+                  <ArrowLeft size={16} /> Voltar
+                </button>
+              ) : <div />}
+
+              {step < 6 ? (
+                <button 
+                  onClick={nextStep} 
+                  className="bg-red-600 text-white px-8 py-4 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-3 shadow-lg shadow-red-900/20 active:scale-95"
+                >
+                  Próximo <ArrowRight size={16} />
+                </button>
+              ) : (
+                <button 
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="bg-white text-black px-10 py-4 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-3 active:scale-95"
+                >
+                  {isSubmitting ? <Loader2 className="animate-spin" /> : <><Skull size={18} /> SELAR PACTO</>}
+                </button>
               )}
-            </AnimatePresence>
-          </form>
-        </motion.div>
-      </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="m-auto text-center space-y-8 p-6">
+            <CheckCircle2 size={100} className="text-red-600 mx-auto" />
+            <h2 className="text-4xl font-cinzel font-black text-white uppercase tracking-widest">Pacto Firmado</h2>
+            <p className="text-zinc-400 font-mono text-sm uppercase tracking-widest animate-pulse">Sua alma agora pertence à Família.</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-const SectionTitle = ({ icon, text }: any) => (
-  <div className="flex items-center gap-4 border-b border-white/5 pb-5">
-    <div className="p-2.5 bg-[#d4af37] text-black rounded-xl shadow-lg">{icon}</div>
-    <h3 className="text-sm font-cinzel font-black uppercase tracking-widest text-white">{text}</h3>
+const Input = ({ label, error, ...props }: any) => (
+  <div className="flex flex-col gap-2">
+    <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">{label}</label>
+    <input {...props} className={`input-prestige ${error ? 'border-red-500 bg-red-500/10' : ''}`} />
   </div>
 );
 
-const Field = ({ label, ...props }: any) => (
-  <div className="space-y-2">
-    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">{label}</label>
-    <input {...props} className="input-prestige w-full text-[11px] font-bold" />
+const TextArea = ({ label, error, ...props }: any) => (
+  <div className="flex flex-col gap-2">
+    <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">{label}</label>
+    <textarea {...props} rows={3} className={`input-prestige resize-none ${error ? 'border-red-500 bg-red-500/10' : ''}`} />
   </div>
 );
 
-const Area = ({ label, ...props }: any) => (
-  <div className="space-y-2">
-    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">{label}</label>
-    <textarea {...props} rows={3} className="input-prestige w-full text-[11px] font-bold resize-none" />
-  </div>
-);
-
-const Select = ({ label, options, name, value, onChange }: any) => (
-  <div className="space-y-2">
-    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">{label}</label>
-    <select name={name} value={value} onChange={onChange} className="input-prestige w-full bg-[#1a1b21] text-[11px] font-bold">
-      {options.map((o: string) => <option key={o} value={o}>{o}</option>)}
-    </select>
-  </div>
-);
-
-const StepActions = ({ onNext, onPrev }: any) => (
-  <div className="flex justify-between items-center pt-8 border-t border-white/5">
-    {onPrev ? (
-      <button type="button" onClick={onPrev} className="flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase text-zinc-500 hover:text-white transition-all">
-        <ArrowLeft size={16} /> Voltar
-      </button>
-    ) : <div/>}
-    {onNext && (
-      <button type="button" onClick={onNext} className="flex items-center gap-2 px-10 py-4 bg-[#d4af37] text-black rounded-xl text-[10px] font-black uppercase shadow-xl">
-        Avançar <ArrowRight size={16} />
-      </button>
-    )}
+const Select = ({ label, name, options, value, onChange }: any) => (
+  <div className="flex flex-col gap-2">
+    <label className="text-[10px] font-black text-white uppercase tracking-widest ml-1">{label}</label>
+    <div className="relative">
+      <select name={name} value={value} onChange={onChange} className="input-prestige appearance-none pr-10">
+        {options.map((o: string) => <option key={o} value={o} className="bg-[#0c0c0e] text-white">{o}</option>)}
+      </select>
+      <ChevronDown size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+    </div>
   </div>
 );
 

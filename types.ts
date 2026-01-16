@@ -6,22 +6,19 @@ export enum CandidateStatus {
 }
 
 export type Rank = 
-  | 'Don Supremo' 
-  | 'Sub-Don' 
-  | 'Conselheiro' 
-  | 'Capitão' 
-  | 'Tenente' 
-  | 'Soldado' 
-  | 'Recruta' 
-  | 'Associado' 
-  | 'Afastado';
+  | 'Don Supremo' | 'Sub-Don' | 'Conselheiro' | 'Capitão' 
+  | 'Tenente' | 'Soldado' | 'Recruta' | 'Associado' | 'Afastado';
 
 export type Profession = 
-  | 'Executor (Combate)' 
-  | 'Piloto (Fuga/Logística)' 
-  | 'Hacker (Inteligência)' 
-  | 'Negociador (Diplomacia)' 
-  | 'Químico (Produção)';
+  | 'Executor (Combate)' | 'Piloto (Fuga/Logística)' 
+  | 'Hacker (Inteligência)' | 'Negociador (Diplomacia)' | 'Químico (Produção)';
+
+export interface Achievement {
+  id: string;
+  icon: string;
+  label: string;
+  description: string;
+}
 
 export interface Candidate {
   id: string;
@@ -32,6 +29,7 @@ export interface Candidate {
   nationality: string;
   civilStatus: string;
   children: string;
+  profession: Profession;
   specialSkills: string;
   workHistory: string;
   areasExperience: string[];
@@ -53,7 +51,6 @@ export interface Candidate {
   signature: string;
   date: string;
   status: CandidateStatus;
-  profession: Profession;
 }
 
 export interface Member {
@@ -64,16 +61,29 @@ export interface Member {
   points: number;
   status: 'Ativo' | 'Inativo' | 'Reserva';
   joinedAt: string;
+  achievements?: string[]; // IDs de Achievement
+  metadata?: {
+    lastEditedBy?: string;
+    editDate?: string;
+  };
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: 'Armamento' | 'Munição' | 'Veículo' | 'Ilegal';
+  quantity: number;
+  assignedTo?: string; // ID do Membro
 }
 
 export interface RPAction {
   id: string;
   type: string;
   description: string;
-  participants: string; // Mudado para string para facilitar edição rápida
+  participants: string;
   success: boolean;
   loot: number;
-  date: string; // ISO String com Hora
+  date: string;
 }
 
 export interface Transaction {
@@ -82,7 +92,7 @@ export interface Transaction {
   category: string;
   amount: number;
   description: string;
-  date: string; // ISO String com Hora
+  date: string;
 }
 
 export interface Warning {
@@ -91,5 +101,12 @@ export interface Warning {
   memberName: string;
   reason: string;
   severity: 'Leve' | 'Média' | 'Grave';
-  date: string; // ISO String com Hora
+  date: string;
+}
+
+export interface SystemLog {
+  id: string;
+  message: string;
+  date: string;
+  type: 'INFO' | 'ALERT' | 'SUCCESS' | 'AI';
 }
